@@ -46,8 +46,8 @@ mapping = pd.read_csv('scripts/mapping.csv', index_col=0)
 general_settings = {'description': 'Timesweep', # str or None : Descripción a mostrar en log.txt
                     'filepath' : 'files',       # str : Carpeta de archivos root
                     'event' : [1,1,1],          # list : Sucesos a reconstruir
-                    'save' : False,             # bool : Guardar resultados
-                    'show' : True               # bool : Mostrar gráficas
+                    'save' : True,              # bool : Guardar resultados
+                    'show' : False              # bool : Mostrar gráficas
 }
 
 #Cómo seleccionar sucesos (item 'event'):
@@ -64,12 +64,11 @@ pre_settings = {'n' : 10,                       # int
                 'm_hits' : 4,                   # int
                 'dist_th_hits' : 20.0,          # float
                 'alpha' : 100.0,                # float
-                'p' : 0.05,           # float
+                'p' : 0.05,                     # float
 }
 
 # Ajustes del algoritmo
-alg_settings = {'W_list' : np.concatenate((np.arange(0.05,2.05,0.1),np.arange(2,5.1))),   # array
-                'fill_dist' : 2.0               # float
+alg_settings = {'V_list' : np.concatenate((np.arange(0.05,2.05,0.1),np.arange(2,5.1)))   # array-like
 }
 
 settings = {**general_settings, **pre_settings, **alg_settings}
@@ -111,7 +110,7 @@ class Event:
     -------
     pre(settings)
         Eliminación de ruido mediante clustering jerárquico (+ filtro en energía)
-    ref_match(W_list=[1])
+    ref_match(V_list=[1])
         Reconstrucción mediante Algoritmo de Referencia
     filter(settings, m=None, dist_th=None)
         Filtrado de matches mediante clustering jerárquico
@@ -281,14 +280,14 @@ class Event:
         
         self.hits = filtered_hits.copy()
 
-    def ref_match(self, W_list=[1]):
+    def ref_match(self, V_list=[1]):
         """Algoritmo de referencia
 
         Devuelve los matches obtenidos a partir de los hits presentes.
 
         Parámetros
         ----------
-        W_list : array-like
+        V_list : array-like
             lista con los tamaños de ventana disponibles
         """
 
@@ -306,7 +305,7 @@ class Event:
                 selected_hits = pd.DataFrame([hit], columns=self.hits.columns)
                 #df donde se almacenan los hits que forman match en esta iteración
 
-                for tol in W_list:
+                for tol in V_list:
                     #df con los hits vecinos del primer plano candidato
                     bag_1 = self.hits[(self.hits.Plane == neigh_plane[0]) &
                                        (self.hits.TPC == tpc) &
@@ -682,10 +681,7 @@ class Event:
 
         # Almacenamiento
         if savepath is not None:
-            if not (self.algorithm == 'cercaniaV2' or self.algorithm == 'cercaniaV3'):
-                fig.savefig(savepath / ('t' + '_' + 'R' + str(self.runID) + '_SR' + str(self.subrunID) + '_E' + str(self.eventID)), bbox_inches='tight')
-            else:
-                fig.savefig(savepath / ('t' + '_' + 'R' + str(self.runID) + '_SR' + str(self.subrunID) + '_E' + str(self.eventID) + '_size' + str(self.size)), bbox_inches='tight')
+            fig.savefig(savepath / ('t' + '_' + 'R' + str(self.runID) + '_SR' + str(self.subrunID) + '_E' + str(self.eventID)), bbox_inches='tight')
     
     def hybrid_plot(self, rec=False, dec=False, show_results=None, savepath=None):
         """Representación híbrida entre espacio de tiempo vs canal y espacio XYZ
@@ -806,7 +802,7 @@ if __name__ == '__main__':
 
     # Creación de directorios de resultados
     if settings['save']:
-        results_path = Path('resultados') / (timestamp + '_TS')
+        results_path = Path('resultados') / (timestamp + '_REF')
         results_path.mkdir(exist_ok=True)
 
         img_path = results_path / 'img'
@@ -828,17 +824,16 @@ if __name__ == '__main__':
         
 
         ## ALGORITMO DE REFERENCIA
-        event.pre(settings)                                # Preprocesamiento
-        event.ref_match(settings['W_list'])        # Matching
-        event.clean()                                      # Eliminación de duplicados
+        event.pre(settings)                                 # Preprocesamiento
+        event.ref_match(settings['V_list'])                 # Matching
+        event.clean()                                       # Eliminación de duplicados
 
 
         ## EVALUACIÓN Y REPRESENTACIÓN GRÁFICA
         results = event.evaluate(results)
         # event.space_plot(alpha=0.1, rec=True, savepath=img_path)                      # Gráfica en XYZ
-        # event.time_plot(rec=True, dec=True, savepath=img_path)                        # Gráfica en tiempo vs canal
+        # event.time_plot(rec=True, dec=False, savepath=img_path)                       # Gráfica en tiempo vs canal
         event.hybrid_plot(rec=True, dec=False, show_results=None, savepath=img_path)    # Gráfica híbrida
-
 
 
     print('Resultados: ')

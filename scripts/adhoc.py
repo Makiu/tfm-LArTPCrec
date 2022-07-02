@@ -46,14 +46,14 @@ from scripts.funciones import find_chain
 # Ajustes generales
 general_settings = {'description': 'Ad-hoc',    # str or None : Descripción a mostrar en log.txt
                     'filelist' : 'files',       # str : Carpeta de archivos root
-                    'event' : [1],          # list : Sucesos a reconstruir
-                    'save' : True,             # bool : Guardar resultados
-                    'show' : False               # bool : Mostrar gráficas
+                    'event' : [1,1,1],          # list : Sucesos a reconstruir
+                    'save' : True,              # bool : Guardar resultados
+                    'show' : False              # bool : Mostrar gráficas
 }
 
 # Ajustes de preprocesamiento
 pre_settings = {'n' : 10,                       # int
-                'm_depos' : 15,                 # int
+                'm_depos' : 2,                  # int
                 'dist_th_depos' : 0.5,          # float
                 'm_hits' : 4,                   # int
                 'dist_th_hits' : 20.0,          # float
@@ -62,7 +62,7 @@ pre_settings = {'n' : 10,                       # int
 }
 
 # Ajustes del algoritmo
-alg_settings = {'W_list' : np.concatenate((np.arange(0.05,2.05,0.1),np.arange(2,5.1))), # array-like
+alg_settings = {'V_list' : np.concatenate((np.arange(0.05,2.05,0.1),np.arange(2,5.1))), # array-like
                 'dist_th_iso' : 30.0,           # float
                 'iso_width': 3,                 # int
                 'm_matches' : 8,                # int
@@ -421,8 +421,10 @@ if __name__ == '__main__':
     # Selección de lista de sucesos
     p = Path(settings['filelist'])
     filelist = p.glob('*.root')
-    if len(settings['event']) > 1:
-            filelist = p.glob('*' + 'R' + str(settings['event'][0]) + '-' + str(settings['event'][0]) + '_SR' + str(settings['event'][1]) + '-' + str(settings['event'][1])  + '.root')
+    if len(settings['event']) == 1:
+        pathlist = p.glob('*' + 'R' + str(settings['event'][0]) + '-' + str(settings['event'][0]) + '_*.root')
+    elif len(settings['event']) > 1:
+        pathlist = p.glob('*' + 'R' + str(settings['event'][0]) + '-' + str(settings['event'][0]) + '_SR' + str(settings['event'][1]) + '-' + str(settings['event'][1])  + '.root')
 
     # Creación de directorios de resultados
     if settings['save']:
@@ -435,7 +437,7 @@ if __name__ == '__main__':
         img_path = None
 
 
-    for entry in uproot.iterate(filelist, library="np", step_size=1):
+    for entry in uproot.iterate(pathlist, library="np", step_size=1):
     
         ## SELECCIÓN DEL SUCESO
         if len(settings['event']) == 3:
@@ -449,7 +451,7 @@ if __name__ == '__main__':
         
         ## ALGORITMO AD-HOC
         event.pre(settings)                                 # Preprocesamiento
-        event.ref_match(settings['W_list'])                 # Matching
+        event.ref_match(settings['V_list'])                 # Matching
         event.clean()                                       # Eliminación de duplicados
         event.classify(settings)                            # Clasificación
         if event.label == 1:

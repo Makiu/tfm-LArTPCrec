@@ -19,7 +19,6 @@ import numpy as np
 import pandas as pd
 import uproot
 from matplotlib import pyplot as plt
-from scipy.spatial import KDTree
 
 from pathlib import Path
 from datetime import datetime
@@ -41,8 +40,8 @@ from scripts.event import Event
 general_settings = {'description': 'Cercania',  # str or None : Descripción a mostrar en log.txt
                     'filelist' : 'files',       # str : Carpeta de archivos root
                     'event' : [1,1,1],          # list : Sucesos a reconstruir
-                    'save' : False,             # bool : Guardar resultados
-                    'show' : True               # bool : Mostrar gráficas
+                    'save' : True,              # bool : Guardar resultados
+                    'show' : False              # bool : Mostrar gráficas
 }
 
 # Ajustes de preprocesamiento
@@ -56,7 +55,7 @@ pre_settings = {'n' : 10,                       # int
 }
 
 # Ajustes del algoritmo
-alg_settings = {'W_list' : np.concatenate((np.arange(0.05,2.05,0.1),np.arange(2,6))), # array-like
+alg_settings = {'V_list' : np.concatenate((np.arange(0.05,2.05,0.1),np.arange(2,5.1))), # array-like
                 'm_matches' : 8,                # int
                 'dist_th_matches' : 2.0,        # float
                 'r_0' : 1.0,                    # float
@@ -67,7 +66,6 @@ alg_settings = {'W_list' : np.concatenate((np.arange(0.05,2.05,0.1),np.arange(2,
                 'fill_dist' : 2.0,              # float
                 'm_matches_2' : 8,              # int
                 'dist_th_matches_2' : 2,        # float
-                'sift_n' : 4                    # int
 }
 
 settings = {**general_settings, **pre_settings, **alg_settings}
@@ -247,7 +245,7 @@ class Cercania(Event):
         self.matches.drop(columns=['status','tscore'])
 
         self.runtime = np.round(time.time() - start + self.runtime,4)
-        print(f'Evento {self.eventID} | {len(self.matches)} matches encontrados | Duración ({time.time()-start} s)')
+        print(f'Evento [{self.runID},{self.subrunID},{self.eventID}] completado: {len(self.matches)} matches en {time.time()-start} s')
        
 
 #%% Ejecución del algoritmo de cercanía
@@ -257,8 +255,10 @@ if __name__ == '__main__':
     # Selección de lista de sucesos
     p = Path(settings['filelist'])
     filelist = p.glob('*.root')
-    if len(settings['event']) > 1:
-            filelist = p.glob('*' + 'R' + str(settings['event'][0]) + '-' + str(settings['event'][0]) + '_SR' + str(settings['event'][1]) + '-' + str(settings['event'][1])  + '.root')
+    if len(settings['event']) == 1:
+        pathlist = p.glob('*' + 'R' + str(settings['event'][0]) + '-' + str(settings['event'][0]) + '_*.root')
+    elif len(settings['event']) > 1:
+        pathlist = p.glob('*' + 'R' + str(settings['event'][0]) + '-' + str(settings['event'][0]) + '_SR' + str(settings['event'][1]) + '-' + str(settings['event'][1])  + '.root')
 
     # Creación de directorios de resultados
     if settings['save']:
@@ -270,9 +270,8 @@ if __name__ == '__main__':
 
     else:
         img_path = None
-        img_path_ts = None
 
-    for entry in uproot.iterate(filelist, library="np", step_size=1):
+    for entry in uproot.iterate(pathlist, library="np", step_size=1):
     
         ## SELECCIÓN DEL SUCESO
         if len(settings['event']) == 3:
@@ -286,7 +285,7 @@ if __name__ == '__main__':
 
         ## ALGORITMO DE CERCANÍA
         event.pre(settings)                                                             # Preprocesamiento
-        event.ref_match(settings['W_list'])                                             # Matching inicial (AR)
+        event.ref_match(settings['V_list'])                                             # Matching inicial (AR)
         event.clean()                                                                   # Eliminación de duplicados (AR)
         event.filter(settings=settings)                                                 # Primer filtrado
         event.match(settings)                                                           # Matching principal
@@ -294,7 +293,7 @@ if __name__ == '__main__':
         event.fill(settings)                                                            # Promediado local
         event.clean()                                                                   # Eliminación de duplicados
         
-        
+        event.matches.to_csv('temp/matches_2_1_c.csv', index=False)
         ## EVALUACIÓN Y REPRESENTACIÓN GRÁFICA
         results = event.evaluate(results)
         # event.space_plot(alpha=0.1, rec=True, savepath=img_path)                      # Gráfica en XYZ
