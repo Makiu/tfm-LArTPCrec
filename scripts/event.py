@@ -34,7 +34,9 @@ from datetime import datetime
 
 import os
 import sys
+
 DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+os.chdir(DIR)
 sys.path.insert(0, DIR)
 
 from scripts.param import param
@@ -43,9 +45,9 @@ mapping = pd.read_csv('scripts/mapping.csv', index_col=0)
 #%% Ajustes
 
 # Ajustes generales
-general_settings = {'description': 'Timesweep', # str or None : Descripción a mostrar en log.txt
+general_settings = {'description': 'Referencia', # str or None : Descripción a mostrar en log.txt
                     'filepath' : 'files',       # str : Carpeta de archivos root
-                    'event' : [1,1,1],          # list : Sucesos a reconstruir
+                    'event' : [2,1,1],          # list : Sucesos a reconstruir
                     'save' : True,              # bool : Guardar resultados
                     'show' : False              # bool : Mostrar gráficas
 }
@@ -802,7 +804,9 @@ if __name__ == '__main__':
 
     # Creación de directorios de resultados
     if settings['save']:
-        results_path = Path('resultados') / (timestamp + '_REF')
+        Path('results').mkdir(exist_ok=True)
+
+        results_path = Path('results') / (timestamp + '_REF')
         results_path.mkdir(exist_ok=True)
 
         img_path = results_path / 'img'

@@ -26,7 +26,9 @@ import time
 
 import os
 import sys
+
 DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+os.chdir(DIR)
 sys.path.insert(0, DIR)
 
 mapping = pd.read_csv('scripts/mapping.csv')
@@ -39,7 +41,7 @@ from scripts.event import Event
 # Ajustes generales
 general_settings = {'description': 'Cercania',  # str or None : Descripción a mostrar en log.txt
                     'filelist' : 'files',       # str : Carpeta de archivos root
-                    'event' : [1,1,1],          # list : Sucesos a reconstruir
+                    'event' : [2,1,1],          # list : Sucesos a reconstruir
                     'save' : True,              # bool : Guardar resultados
                     'show' : False              # bool : Mostrar gráficas
 }
@@ -262,7 +264,9 @@ if __name__ == '__main__':
 
     # Creación de directorios de resultados
     if settings['save']:
-        results_path = Path('resultados') / (timestamp + '_C')
+        Path('results').mkdir(exist_ok=True)
+        
+        results_path = Path('results') / (timestamp + '_C')
         results_path.mkdir(exist_ok=True)
 
         img_path = results_path / 'img'
@@ -293,7 +297,7 @@ if __name__ == '__main__':
         event.fill(settings)                                                            # Promediado local
         event.clean()                                                                   # Eliminación de duplicados
         
-        event.matches.to_csv('temp/matches_2_1_c.csv', index=False)
+
         ## EVALUACIÓN Y REPRESENTACIÓN GRÁFICA
         results = event.evaluate(results)
         # event.space_plot(alpha=0.1, rec=True, savepath=img_path)                      # Gráfica en XYZ

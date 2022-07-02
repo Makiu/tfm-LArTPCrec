@@ -27,13 +27,14 @@ from scipy.spatial import distance, distance_matrix
 from sklearn.cluster import AgglomerativeClustering
 
 import itertools
-import time
 from pathlib import Path
 from datetime import datetime
 
 import os
 import sys
+
 DIR = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))
+os.chdir(DIR)
 sys.path.insert(0, DIR)
 
 mapping = pd.read_csv('scripts/mapping.csv', index_col=0)
@@ -46,7 +47,7 @@ from scripts.funciones import find_chain
 # Ajustes generales
 general_settings = {'description': 'Ad-hoc',    # str or None : Descripción a mostrar en log.txt
                     'filelist' : 'files',       # str : Carpeta de archivos root
-                    'event' : [1,1,1],          # list : Sucesos a reconstruir
+                    'event' : [2,1,1],          # list : Sucesos a reconstruir
                     'save' : True,              # bool : Guardar resultados
                     'show' : False              # bool : Mostrar gráficas
 }
@@ -428,7 +429,9 @@ if __name__ == '__main__':
 
     # Creación de directorios de resultados
     if settings['save']:
-        results_path = Path('resultados') / (timestamp + '_AH')
+        Path('results').mkdir(exist_ok=True)
+        
+        results_path = Path('results') / (timestamp + '_AH')
         results_path.mkdir(exist_ok=True)
 
         img_path = results_path / 'img'
@@ -458,6 +461,8 @@ if __name__ == '__main__':
             event.filter(settings)                          # Filtrado
             event.iso_match(settings)                       # Matching adhoc
             event.clean()                                   # Eliminación de duplicados
+        else:
+            print(f'Evento [{event.runID},{event.subrunID},{event.eventID}] completado: {len(event.matches)} matches en {event.runtime} s')
         
 
         ## EVALUACIÓN Y REPRESENTACIÓN GRÁFICA
